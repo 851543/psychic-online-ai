@@ -5,3 +5,5 @@ pip install -U label-studio
 
 ## Launch it!
 label-studio
+
+![img.png](img.png)

@@ -43,6 +43,7 @@ class VOCDataset(Dataset):
             image = self.transform(image)
         return image, target
 
+
 class YOLODataset(Dataset):
     def __init__(self, image_folder, label_folder, transform, label_transform):
         self.image_folder = image_folder
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     # print(train_dataset[2])
 
     train_dataset = YOLODataset("F:\Python\Project\psychic-online-ai\\test-data\\yolo\images",
-                               "F:\Python\Project\psychic-online-ai\\test-data\\yolo\labels",
-                               transforms.Compose([transforms.ToTensor()]), None)
+                                "F:\Python\Project\psychic-online-ai\\test-data\\yolo\labels",
+                                transforms.Compose([transforms.ToTensor()]), None)
     print(len(train_dataset))
     print(train_dataset[2])
