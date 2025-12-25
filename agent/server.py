@@ -2,13 +2,14 @@ import asyncio
 import json
 import os
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, Request
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
 from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
 from starlette.responses import StreamingResponse
 
+from agent.output import ContactInfo
 from agent.tool import search, get_weather, handle_tool_errors, CustomContext, update_user_info, greet, CustomState, \
     my_course
 from agent.prompt import user_role_prompt
@@ -36,6 +37,11 @@ agent = create_agent(
     middleware=[handle_tool_errors, user_role_prompt, summarizationMiddleware],
     state_schema=CustomState,
     context_schema=CustomContext,
+)
+
+agent_review = create_agent(
+    llm,
+    response_format=ContactInfo  # Auto-selects ProviderStrategy
 )
 
 app = FastAPI(root_path="/ai")
@@ -68,6 +74,17 @@ async def chat(user_id: str = Form(), prompt: str = Form()):
             "Access-Control-Allow-Origin": "*",
         }
     )
+
+
+@app.post("/course_commit_audit")
+async def chat(request: Request):
+    raw_body = await request.body()
+    json = raw_body.decode("utf-8")
+    result = agent_review.invoke({
+        "messages": [
+            {"role": "user", "content": json}]
+    })
+    return result["structured_response"].review
 
 
 if __name__ == '__main__':
