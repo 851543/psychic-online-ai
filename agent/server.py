@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 
@@ -44,7 +43,21 @@ agent_review = create_agent(
     response_format=ContactInfo  # Auto-selects ProviderStrategy
 )
 
+agent_code = create_agent(
+    llm,
+)
+
 app = FastAPI(root_path="/ai")
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:88"],  # 或 ["*"]（仅开发）
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def stream_tokens(prompt: str, user_id: str):
@@ -87,7 +100,27 @@ async def chat(request: Request):
     return result["structured_response"].review
 
 
+@app.post("/answer")
+async def chat(request: Request):
+    body = await request.body()
+    data = json.loads(body)
+    result = agent_code.invoke({
+        "messages": [
+            {"role": "system", "content": "你是一名严谨的编程助教。"},
+            {"role": "user", "content": f"""
+            请根据题目描述，给出解题思路、关键边界情况，并输出可运行的 {data["language"]} 代码。
+            我给了现有代码，请指出问题并给出改进后的完整代码。
+            【题目描述】
+            {data["problemText"]}
+            【语言】{data["language"]}
+            {data["code"]}
+            """}
+        ]
+    })
+    return result["messages"][2].content
+
+
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run(app, host="localhost", port=10095)
+uvicorn.run(app, host="localhost", port=10095)
